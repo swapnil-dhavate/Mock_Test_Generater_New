@@ -1,0 +1,6 @@
+{
+  "name": "NursAI - Enterprise Nursing Prep",
+  "description": "A complete AI-powered educational ecosystem for Nursing Exams (DHS/DMER, NCLEX) serving as an AI mentor, evaluator, and study planner.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

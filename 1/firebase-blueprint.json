@@ -1,0 +1,83 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and role",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "admin"] },
+        "createdAt": { "type": "string", "format": "timestamp" },
+        "updatedAt": { "type": "string", "format": "timestamp" }
+      },
+      "required": ["email", "name", "role", "createdAt", "updatedAt"]
+    },
+    "Question": {
+      "title": "Question",
+      "description": "A nursing examination question",
+      "type": "object",
+      "properties": {
+        "question": { "type": "string" },
+        "options": { "type": "array", "items": { "type": "string" } },
+        "correctAnswer": { "type": "string" },
+        "explanation": { "type": "string" },
+        "wrongExplanations": { "type": "array", "items": { "type": "string" } },
+        "clinicalSignificance": { "type": "string" },
+        "difficulty": { "type": "string" },
+        "category": { "type": "string" },
+        "subtopic": { "type": "string" },
+        "memoryTrick": { "type": "string" },
+        "createdAt": { "type": "string", "format": "timestamp" }
+      },
+      "required": ["question", "options", "correctAnswer", "explanation", "difficulty", "category"]
+    },
+    "TestAttempt": {
+      "title": "Test Attempt",
+      "description": "A user's attempt at a mock test or practice quiz",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "type": { "type": "string", "enum": ["mock", "practice", "adaptive"] },
+        "score": { "type": "number" },
+        "totalQuestions": { "type": "number" },
+        "accuracy": { "type": "number" },
+        "timeSpentMs": { "type": "number" },
+        "createdAt": { "type": "string", "format": "timestamp" }
+      },
+      "required": ["userId", "score", "totalQuestions", "createdAt"]
+    },
+    "Analytics": {
+      "title": "Analytics",
+      "description": "User's performance analytics and weaknesses",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "totalTests": { "type": "number" },
+        "averageAccuracy": { "type": "number" },
+        "weakTopics": { "type": "array", "items": { "type": "string" } },
+        "readinessScore": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "timestamp" }
+      },
+      "required": ["userId", "totalTests", "averageAccuracy", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles"
+    },
+    "/questions/{questionId}": {
+      "schema": { "$ref": "#/entities/Question" },
+      "description": "Global question bank"
+    },
+    "/users/{userId}/attempts/{attemptId}": {
+      "schema": { "$ref": "#/entities/TestAttempt" },
+      "description": "User's test history"
+    },
+    "/users/{userId}/analytics/current": {
+      "schema": { "$ref": "#/entities/Analytics" },
+      "description": "User's analytics summary"
+    }
+  }
+}

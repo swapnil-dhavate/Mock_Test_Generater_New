@@ -1,0 +1,122 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ---------------------------------------------------------
+    // Primitive Validation Helpers
+    // ---------------------------------------------------------
+    function isValidId(id) { 
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    // Using simple claim check or a dedicated admin collection for this enterprise app
+    function isAdmin() { return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+
+    // ---------------------------------------------------------
+    // Entity Validators
+    // ---------------------------------------------------------
+    function isValidUser(data) {
+      return data.keys().hasOnly(['name', 'email', 'role', 'createdAt', 'updatedAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.email is string && data.email.size() > 0 && data.email.size() <= 200 &&
+             data.role in ['student', 'admin'] &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidQuestion(data) {
+      return data.question is string && data.question.size() > 0 && data.question.size() <= 2000 &&
+             data.options is list && data.options.size() == 4 &&
+             data.options[0] is string && data.correctAnswer is string &&
+             data.explanation is string && data.explanation.size() <= 5000 &&
+             data.difficulty in ['Beginner', 'Moderate', 'Advanced', 'Exam-level', 'NCLEX-level'] &&
+             data.category is string && data.category.size() <= 100 &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidTestAttempt(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.type in ['mock', 'practice', 'adaptive'] &&
+             data.score is number &&
+             data.totalQuestions is number &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidAnalytics(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.totalTests is number &&
+             data.averageAccuracy is number &&
+             data.updatedAt is timestamp;
+    }
+
+    // ---------------------------------------------------------
+    // Rule Definitions
+    // ---------------------------------------------------------
+    
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if false; // No list on users globally
+      
+      // Allow creation by self if verified
+      allow create: if isOwner(userId) && isValidId(userId) &&
+        isValidUser(incoming()) &&
+        incoming().role == 'student' && // cannot create admin role
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      
+      allow update: if (isOwner(userId) || isAdmin()) && isValidId(userId) &&
+        isValidUser(incoming()) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (isAdmin() || incoming().role == existing().role) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'updatedAt']);
+    }
+
+    match /questions/{questionId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /users/{userId}/attempts/{attemptId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if (isOwner(userId) || isAdmin()) && resource.data.userId == request.auth.uid;
+      
+      allow create: if isOwner(userId) && isValidId(attemptId) && isValidId(userId) &&
+        isValidTestAttempt(incoming()) &&
+        incoming().createdAt == request.time &&
+        exists(/databases/$(database)/documents/users/$(userId));  // Relational check
+        
+      allow update, delete: if false; // Immutable
+    }
+    
+    match /users/{userId}/analytics/current {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if false; // Single doc
+      
+      allow create: if isOwner(userId) && isValidId(userId) &&
+        isValidAnalytics(incoming()) &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/users/$(userId));
+        
+      allow update: if isOwner(userId) && isValidId(userId) &&
+        isValidAnalytics(incoming()) &&
+        incoming().updatedAt == request.time &&
+        incoming().userId == existing().userId;
+    }
+    
+    match /admins/{uid} {
+      allow get: if isSignedIn();
+      allow list: if false;
+      allow write: if false; // Only manageable in console
+    }
+  }
+}

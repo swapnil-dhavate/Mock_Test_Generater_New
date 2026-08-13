@@ -1,0 +1,192 @@
+[
+  {
+    "question": "A nurse is educating a patient newly diagnosed with osteoporosis. Which of the following best describes the cellular imbalance in osteoporosis that primarily contributes to bone fragility?",
+    "options": {
+      "A": "Increased osteoblast activity with decreased osteoclast activity.",
+      "B": "Decreased osteoblast activity with increased osteoclast activity.",
+      "C": "Balanced osteoblast and osteoclast activity but reduced collagen synthesis.",
+      "D": "Normal osteoblast activity but accelerated osteocyte apoptosis."
+    },
+    "correctAnswer": "B",
+    "explanation": "Osteoporosis is characterized by a disruption in the bone remodeling cycle where bone resorption (breakdown by osteoclasts) outpaces bone formation (building by osteoblasts). While osteoclasts may be overly active, it is the relative decrease in osteoblast activity and/or their inability to compensate for the resorption that leads to a net loss of bone mineral density and increased fragility. Clinical Significance: Understanding this cellular imbalance guides treatment strategies, focusing on inhibiting osteoclast activity (e.g., bisphosphonates) or stimulating osteoblast activity. Memory Trick: Think of 'B' for 'Build' (Osteoblasts) and 'C' for 'Consume' (Osteoclasts). In osteoporosis, the 'Consumers' are winning over the 'Builders'.",
+    "difficulty": "Moderate",
+    "category": "Anatomy & Physiology",
+    "subtopic": "Skeletal System",
+    "sourceAPI": "Gemini",
+    "id": "wo4fna7ujkmpwhdoj1",
+    "language": "en",
+    "script": "Latin",
+    "encoding": "UTF-8"
+  },
+  {
+    "question": "A patient presents to the emergency department with acute onset of severe pain, redness, and swelling in the right great toe. Labs indicate elevated uric acid levels. Which anatomical structure is most commonly affected in this condition, and what specific type of joint is it?",
+    "options": {
+      "A": "Phalanges, fibrous joint.",
+      "B": "First metatarsophalangeal (MTP) joint, synovial joint.",
+      "C": "Tarsometatarsal joint, cartilaginous joint.",
+      "D": "Calcaneus, cartilaginous joint."
+    },
+    "correctAnswer": "B",
+    "explanation": "The clinical presentation (acute pain, redness, swelling in the great toe with elevated uric acid) is classic for gout. Gout most commonly affects the first metatarsophalangeal (MTP) joint, which is the joint connecting the metatarsal bone of the foot to the proximal phalanx of the great toe. MTP joints are synovial joints, specifically condyloid joints, characterized by a joint capsule, synovial fluid, and articular cartilage, allowing for a wide range of motion. Clinical Significance: Identifying the specific joint helps in accurate diagnosis, aspiration for crystal analysis, and targeted treatment (e.g., NSAIDs, colchicine, allopurinol). Memory Trick: 'MTP' for 'Most Tender Part' in gout.",
+    "difficulty": "Hard",
+    "category": "Anatomy & Physiology",
+    "subtopic": "Skeletal System",
+    "sourceAPI": "Gemini",
+    "id": "wv5l0imhhvmpwhdoj1",
+    "language": "en",
+    "script": "Latin",
+    "encoding": "UTF-8"
+  },
+  {
+    "question": "A patient is admitted with acute decompensated heart failure. The nurse observes bilateral pitting edema, jugular venous distension (JVD), and auscultates crackles in both lung bases. These findings, when occurring together, are most directly indicative of significant dysfunction in which primary cardiac chamber?",
+    "options": {
+      "A": "Left Atrium.",
+      "B": "Right Atrium.",
+      "C": "Left Ventricle.",
+      "D": "Right Ventricle."
+    },
+    "correctAnswer": "C",
+    "explanation": "Crackles in the lungs (pulmonary edema) are a hallmark of left-sided heart failure due to blood backing up into the pulmonary circulation. While JVD and peripheral edema are signs of right-sided heart failure (systemic venous congestion), in most cases, left ventricular dysfunction is the initial and primary issue leading to global heart failure. The inability of the left ventricle to pump blood effectively causes blood to back up into the lungs, increasing pulmonary pressures. This increased pressure then puts strain on the right ventricle, eventually leading to its failure and subsequent systemic congestion. Clinical Significance: Identifying left ventricular dysfunction as the primary cause directs critical interventions such as diuretics, ACE inhibitors, beta-blockers, and inotropes to improve cardiac output and reduce pulmonary congestion. Memory Trick: 'L' for 'Left' and 'Lungs' – problems with the left side back up into the lungs. Systemic congestion (edema, JVD) often follows due to the domino effect on the right side.",
+    "difficulty": "Moderate",
+    "category": "Anatomy & Physiology",
+    "subtopic": "Cardiovascular System",
+    "sourceAPI": "Gemini",
+    "id": "u8k65azwgjmpwhdoj1",
+    "language": "en",
+    "script": "Latin",
+    "encoding": "UTF-8"
+  },
+  {
+    "question": "A 65-year-old male presents to the emergency department with crushing substernal chest pain radiating to his left arm and jaw. An electrocardiogram (ECG) reveals ST-segment elevation in leads V2, V3, and V4. This finding is highly suggestive of a myocardial infarction affecting the distribution of which major coronary artery?",
+    "options": {
+      "A": "Right Coronary Artery (RCA).",
+      "B": "Left Circumflex Artery (LCx).",
+      "C": "Left Anterior Descending (LAD) Artery.",
+      "D": "Posterior Descending Artery (PDA)."
+    },
+    "correctAnswer": "C",
+    "explanation": "ST-segment elevation in leads V2-V4 is indicative of an anterior wall myocardial infarction. The Left Anterior Descending (LAD) artery, a branch of the left main coronary artery, supplies the anterior wall of the left ventricle and the anterior two-thirds of the interventricular septum. It is often referred to as the 'widowmaker' due to the significant impact of its occlusion. Clinical Significance: Rapid identification of the affected coronary artery helps guide emergent reperfusion therapies (e.g., percutaneous coronary intervention or thrombolysis) to minimize myocardial damage. Memory Trick: 'LAD' sounds like 'Lead' (as in ECG leads). LAD occlusion affects the 'anterior' (front) part of the heart, correlating with anterior leads (V2-V4).",
+    "difficulty": "Hard",
+    "category": "Anatomy & Physiology",
+    "subtopic": "Cardiovascular System",
+    "sourceAPI": "Gemini",
+    "id": "zpdn870lnzmpwhdoj1",
+    "language": "en",
+    "script": "Latin",
+    "encoding": "UTF-8"
+  },
+  {
+    "question": "A patient with severe chronic obstructive pulmonary disease (COPD) is receiving supplemental oxygen. The nurse observes signs of increasing somnolence and depressed respiratory rate after the oxygen flow rate was increased. This physiological response is primarily due to the suppression of which compensatory mechanism?",
+    "options": {
+      "A": "Central chemoreceptors in the medulla responding to CO2 levels.",
+      "B": "Peripheral chemoreceptors in the carotid and aortic bodies responding to oxygen levels.",
+      "C": "Stretch receptors in the bronchioles preventing overinflation.",
+      "D": "Irritant receptors in the trachea triggering a cough reflex."
+    },
+    "correctAnswer": "B",
+    "explanation": "In individuals with chronic hypercapnia (high CO2 levels) due to conditions like severe COPD, the central chemoreceptors in the medulla become desensitized to CO2 levels. Their primary drive to breathe then shifts to the peripheral chemoreceptors located in the carotid and aortic bodies, which are sensitive to low arterial oxygen levels (the 'hypoxic drive'). Administering high concentrations of supplemental oxygen removes this hypoxic stimulus, thereby diminishing the patient's drive to breathe and potentially leading to respiratory depression. Clinical Significance: This is a critical safety consideration for nurses managing oxygen therapy in COPD patients, necessitating careful titration of oxygen to maintain adequate saturation without suppressing the respiratory drive. Memory Trick: Think 'P' for 'Peripheral' and 'P' for 'PO2' (oxygen) – peripheral chemoreceptors primarily monitor oxygen, becoming the main drive in chronic hypercapnia.",
+    "difficulty": "Moderate",
+    "category": "Anatomy & Physiology",
+    "subtopic": "Respiratory System",
+    "sourceAPI": "Gemini",
+    "id": "vougd6gs4bmpwhdoj1",
+    "language": "en",
+    "script": "Latin",
+    "encoding": "UTF-8"
+  },
+  {
+    "question": "A patient is experiencing severe anaphylaxis with rapidly progressive bronchospasm and laryngeal edema. From a respiratory mechanics perspective, the primary physiological consequence that leads to immediate life-threatening respiratory distress in this scenario is a drastic increase in which parameter?",
+    "options": {
+      "A": "Tidal volume.",
+      "B": "Inspiratory reserve volume.",
+      "C": "Airway resistance.",
+      "D": "Alveolar compliance."
+    },
+    "correctAnswer": "C",
+    "explanation": "Bronchospasm (constriction of bronchial smooth muscle) and laryngeal edema (swelling of the larynx) both severely narrow the airways. This narrowing drastically increases the resistance to airflow into and out of the lungs. According to Poiseuille's Law, even a small reduction in airway radius leads to a significant increase in resistance, making it extremely difficult for the patient to move air, causing severe respiratory distress and hypoxia. Tidal volume would decrease, not increase. Inspiratory reserve volume would be affected, but increased airway resistance is the direct, life-threatening mechanism. Alveolar compliance refers to the stretchiness of the lung tissue itself, which is not the primary issue in anaphylactic airway obstruction. Clinical Significance: Rapid recognition of increased airway resistance necessitates immediate interventions like epinephrine, bronchodilators, and corticosteroids to dilate airways and reduce edema. Memory Trick: 'Anaphylaxis' often involves 'Airway' problems, which translate to high 'Airway Resistance'.",
+    "difficulty": "Hard",
+    "category": "Anatomy & Physiology",
+    "subtopic": "Respiratory System",
+    "sourceAPI": "Gemini",
+    "id": "5rrsy5hyeqmpwhdoj1",
+    "language": "en",
+    "script": "Latin",
+    "encoding": "UTF-8"
+  },
+  {
+    "question": "A patient is diagnosed with a cerebrovascular accident (stroke) affecting the right frontal lobe. The nurse should anticipate that the patient's primary deficits will likely involve which of the following functions?",
+    "options": {
+      "A": "Visual processing and interpretation.",
+      "B": "Balance and coordination.",
+      "C": "Executive functions, planning, and personality changes.",
+      "D": "Auditory processing and language comprehension."
+    },
+    "correctAnswer": "C",
+    "explanation": "The frontal lobe is the brain's 'command center,' responsible for higher-level cognitive functions, often termed executive functions. These include decision-making, problem-solving, planning, initiation of voluntary movement, attention, and personality. Damage to the frontal lobe, especially the right side, can lead to impaired judgment, impulsivity, emotional lability, and changes in personality. Visual processing is primarily in the occipital lobe. Balance and coordination are primarily controlled by the cerebellum. Auditory processing and language comprehension (Wernicke's area) are primarily in the temporal lobe. Clinical Significance: Understanding frontal lobe functions helps nurses anticipate specific behavioral and cognitive deficits, implement appropriate safety measures, and tailor rehabilitation strategies. Memory Trick: Think of the 'Front' of a business as where the 'Executives' work – planning, leading, and showing their 'personality'.",
+    "difficulty": "Hard",
+    "category": "Anatomy & Physiology",
+    "subtopic": "Nervous System",
+    "sourceAPI": "Gemini",
+    "id": "ba6d1eptxmmpwhdoj1",
+    "language": "en",
+    "script": "Latin",
+    "encoding": "UTF-8"
+  },
+  {
+    "question": "A patient recently underwent a cholecystectomy (surgical removal of the gallbladder). The nurse provides discharge instructions, emphasizing dietary modifications. Digestion of which macronutrient will be most significantly affected due to the absence of the gallbladder?",
+    "options": {
+      "A": "Carbohydrates.",
+      "B": "Proteins.",
+      "C": "Fats.",
+      "D": "Nucleic acids."
+    },
+    "correctAnswer": "C",
+    "explanation": "The gallbladder's primary function is to store and concentrate bile, which is produced by the liver. Bile is crucial for the emulsification of fats in the small intestine, breaking them down into smaller globules to increase the surface area for pancreatic lipase enzymes to digest them. Without the gallbladder, bile still flows directly from the liver to the small intestine, but it is less concentrated and its release is not as precisely regulated. This often leads to difficulty digesting large or fatty meals, causing symptoms like diarrhea or indigestion. Clinical Significance: Patients post-cholecystectomy often need to consume smaller, more frequent meals and limit high-fat foods to avoid gastrointestinal discomfort and malabsorption. Memory Trick: 'Gallbladder' and 'Grease' (fats) – the gallbladder helps you process fatty foods.",
+    "difficulty": "Moderate",
+    "category": "Anatomy & Physiology",
+    "subtopic": "Gastrointestinal System",
+    "sourceAPI": "Gemini",
+    "id": "3yb7p6xvjmmpwhdoj1",
+    "language": "en",
+    "script": "Latin",
+    "encoding": "UTF-8"
+  },
+  {
+    "question": "A patient is admitted with severe dehydration secondary to prolonged vomiting and diarrhea. The nurse anticipates which major hormonal system will be activated by the kidneys to primarily conserve water and sodium, thereby attempting to restore blood volume and blood pressure?",
+    "options": {
+      "A": "Increased secretion of Atrial Natriuretic Peptide (ANP).",
+      "B": "Decreased release of Antidiuretic Hormone (ADH).",
+      "C": "Activation of the Renin-Angiotensin-Aldosterone System (RAAS).",
+      "D": "Increased production of erythropoietin."
+    },
+    "correctAnswer": "C",
+    "explanation": "Severe dehydration leads to decreased blood volume and blood pressure. In response, the juxtaglomerular apparatus in the kidneys releases renin. Renin initiates the Renin-Angiotensin-Aldosterone System (RAAS), a cascade that ultimately leads to the production of angiotensin II and aldosterone. Angiotensin II causes vasoconstriction and stimulates ADH release, while aldosterone promotes sodium and water reabsorption in the renal tubules. The combined effect is increased blood pressure and conservation of fluid volume. ANP is released in response to *high* blood volume, not low. Decreased ADH would worsen dehydration. Erythropoietin stimulates red blood cell production, not directly fluid conservation. Clinical Significance: Understanding RAAS activation helps the nurse anticipate patient responses to dehydration and manage fluid and electrolyte imbalances effectively. Memory Trick: 'RAAS' helps 'Raise' blood volume and pressure, acting as a 'Regulator' for dehydration.",
+    "difficulty": "Moderate",
+    "category": "Anatomy & Physiology",
+    "subtopic": "Renal System",
+    "sourceAPI": "Gemini",
+    "id": "rfv2argkdhmpwhdoj1",
+    "language": "en",
+    "script": "Latin",
+    "encoding": "UTF-8"
+  },
+  {
+    "question": "A patient with end-stage renal disease (ESRD) develops renal osteodystrophy. The nurse understands that this bone disease is primarily due to the kidneys' inability to perform which crucial metabolic function related to mineral homeostasis?",
+    "options": {
+      "A": "Secrete parathyroid hormone (PTH).",
+      "B": "Activate vitamin D.",
+      "C": "Produce calcitonin.",
+      "D": "Reabsorb calcium from the diet."
+    },
+    "correctAnswer": "B",
+    "explanation": "The kidneys play a critical role in mineral metabolism by converting 25-hydroxyvitamin D (from diet/skin) into its active form, 1,25-dihydroxyvitamin D (calcitriol). Active vitamin D is essential for the absorption of calcium from the gastrointestinal tract and for proper bone mineralization. In ESRD, the kidneys lose this ability, leading to low levels of active vitamin D. This, in turn, causes hypocalcemia, which stimulates the parathyroid glands to overproduce parathyroid hormone (PTH), a condition known as secondary hyperparathyroidism. High PTH, along with impaired vitamin D, contributes to bone demineralization and renal osteodystrophy. The kidneys do not secrete PTH (parathyroid glands do) or produce calcitonin (thyroid gland does). While kidneys are involved in calcium reabsorption, the primary metabolic dysfunction leading to osteodystrophy is vitamin D activation. Clinical Significance: Patients with ESRD are often prescribed active vitamin D supplements (e.g., calcitriol) and phosphate binders to manage this complication. Memory Trick: 'K' for 'Kidney' and 'K' for 'Key' role in activating Vitamin D.",
+    "difficulty": "Hard",
+    "category": "Anatomy & Physiology",
+    "subtopic": "Renal System",
+    "sourceAPI": "Gemini",
+    "id": "2vba6asp0hmpwhdoj2",
+    "language": "en",
+    "script": "Latin",
+    "encoding": "UTF-8"
+  }
+]
