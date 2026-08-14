@@ -72,7 +72,7 @@ export default function LandingPage() {
 
   // Real accounts can log in with either their actual email, or a short "username" that maps to a
   // dedicated internal email behind the scenes (e.g. admin-provisioned accounts without a real inbox).
-  const resolveSyntheticEmail = (input: string) => `${input.trim().toLowerCase().replace(/[^a-z0-9]/g, '')}@nursai.internal`;
+  const resolveSyntheticEmail = (input: string) => `${input.trim().toLowerCase().replace(/[^a-z0-9]/g, '')}@nursai-app.com`;
 
   const handleLogin = async (e: React.FormEvent) => {
     e?.preventDefault?.();
