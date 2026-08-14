@@ -1,4 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
@@ -54,6 +56,7 @@ interface SyllabusTopic {
   status: 'Not Started' | 'In Progress' | 'Completed';
   hours: number;
   difficulty: 'Easy' | 'Medium' | 'Hard';
+  hoursStudied?: number;
 }
 
 interface SyllabusSubject {
@@ -157,16 +160,86 @@ export default function ExamPrepPage({ fallbackAdmin }: { fallbackAdmin?: any })
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
+  const [userId, setUserId] = useState<string | null>(null);
+  const [progressMap, setProgressMap] = useState<Record<string, { status: SyllabusTopic['status']; hours_studied: number }>>({});
+
+  // Load the signed-in user's real syllabus progress (fallback admin keeps the static "Not Started" defaults)
+  useEffect(() => {
+    if (fallbackAdmin) return;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) return;
+      setUserId(user.id);
+
+      const { data, error } = await supabase.from('syllabus_progress').select('*').eq('user_id', user.id);
+      if (data && !error) {
+        const map: typeof progressMap = {};
+        data.forEach((row: any) => {
+          map[`${row.subject}|${row.topic}`] = { status: row.status, hours_studied: Number(row.hours_studied) || 0 };
+        });
+        setProgressMap(map);
+      }
+    })();
+  }, [fallbackAdmin]);
+
+  // Overlay real per-user progress onto the syllabus catalog and recompute subject-level progress from it
+  const mergedSyllabusData = useMemo(() => {
+    return initialSyllabusData.map((subject) => {
+      const topics = subject.topics.map((topic) => {
+        const override = progressMap[`${subject.subject}|${topic.name}`];
+        return override
+          ? { ...topic, status: override.status, hoursStudied: override.hours_studied }
+          : { ...topic, hoursStudied: 0 };
+      });
+      const completedWeight = topics.reduce((sum, t) => sum + (t.status === 'Completed' ? 1 : t.status === 'In Progress' ? 0.5 : 0), 0);
+      const progress = topics.length > 0 ? Math.round((completedWeight / topics.length) * 100) : 0;
+      return { ...subject, topics, progress };
+    });
+  }, [progressMap]);
 
   const overallProgress = useMemo(() => {
-    if (initialSyllabusData.length === 0) return 0;
-    const total = initialSyllabusData.reduce((sum, subject) => sum + subject.progress, 0);
-    return Math.round(total / initialSyllabusData.length);
-  }, []);
+    if (mergedSyllabusData.length === 0) return 0;
+    const total = mergedSyllabusData.reduce((sum, subject) => sum + subject.progress, 0);
+    return Math.round(total / mergedSyllabusData.length);
+  }, [mergedSyllabusData]);
+
+  const saveTopicProgress = async (subjectName: string, topicName: string, status: SyllabusTopic['status'], hoursStudied: number) => {
+    setProgressMap(prev => ({ ...prev, [`${subjectName}|${topicName}`]: { status, hours_studied: hoursStudied } }));
+
+    if (!userId) {
+      toast.info('Sign in with a real account to save your progress.');
+      return;
+    }
+    const { error } = await supabase.from('syllabus_progress').upsert({
+      user_id: userId,
+      subject: subjectName,
+      topic: topicName,
+      status,
+      hours_studied: hoursStudied,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id,subject,topic' });
+    if (error) {
+      console.warn('Failed to save syllabus progress', error);
+      toast.error('Could not save progress. Please try again.');
+    }
+  };
+
+  const updateTopicStatus = (subjectName: string, topicName: string, newStatus: SyllabusTopic['status']) => {
+    const current = progressMap[`${subjectName}|${topicName}`];
+    saveTopicProgress(subjectName, topicName, newStatus, current?.hours_studied || 0);
+  };
+
+  const logStudyHour = (subjectName: string, topicName: string) => {
+    const current = progressMap[`${subjectName}|${topicName}`];
+    const newHours = (current?.hours_studied || 0) + 1;
+    const newStatus = !current || current.status === 'Not Started' ? 'In Progress' : current.status;
+    saveTopicProgress(subjectName, topicName, newStatus, newHours);
+  };
 
   // Filtered Syllabus Logic
   const filteredSyllabus = useMemo(() => {
-    return initialSyllabusData.map((subject) => {
+    return mergedSyllabusData.map((subject) => {
       const filteredTopics = subject.topics.filter((topic) => {
         const matchesSearch = topic.name.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = statusFilter === 'All' || topic.status === statusFilter;
@@ -174,7 +247,7 @@ export default function ExamPrepPage({ fallbackAdmin }: { fallbackAdmin?: any })
       });
       return { ...subject, topics: filteredTopics };
     }).filter(subject => subject.topics.length > 0);
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, mergedSyllabusData]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-12">
@@ -368,13 +441,27 @@ export default function ExamPrepPage({ fallbackAdmin }: { fallbackAdmin?: any })
                                 <Badge variant={topic.difficulty === 'Hard' ? 'destructive' : topic.difficulty === 'Medium' ? 'default' : 'secondary'} className={topic.difficulty==='Medium' ? 'bg-orange-100 text-orange-800 hover:bg-orange-100 border-none' : 'border-none'}>
                                   {topic.difficulty}
                                 </Badge>
-                                <Badge variant="outline" className={`px-2.5 py-1 ${
-                                  topic.status === 'Completed' ? 'border-green-200 text-green-700 bg-green-50' : 
-                                  topic.status === 'In Progress' ? 'border-amber-200 text-amber-700 bg-amber-50' : 
-                                  'border-slate-200 text-slate-600 bg-slate-50'
-                                }`}>
-                                  {topic.status}
-                                </Badge>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 px-2.5 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50"
+                                  onClick={() => logStudyHour(subject.subject, topic.name)}
+                                >
+                                  +1 hr{topic.hoursStudied ? ` (${topic.hoursStudied} logged)` : ''}
+                                </Button>
+                                <select
+                                  value={topic.status}
+                                  onChange={(e) => updateTopicStatus(subject.subject, topic.name, e.target.value as SyllabusTopic['status'])}
+                                  className={`text-xs font-semibold px-2.5 py-1.5 rounded-md border cursor-pointer ${
+                                    topic.status === 'Completed' ? 'border-green-200 text-green-700 bg-green-50' :
+                                    topic.status === 'In Progress' ? 'border-amber-200 text-amber-700 bg-amber-50' :
+                                    'border-slate-200 text-slate-600 bg-slate-50'
+                                  }`}
+                                >
+                                  <option value="Not Started">Not Started</option>
+                                  <option value="In Progress">In Progress</option>
+                                  <option value="Completed">Completed</option>
+                                </select>
                               </div>
                             </div>
                           ))}
