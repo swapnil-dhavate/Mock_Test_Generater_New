@@ -3,6 +3,68 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { UploadCloud, CheckCircle2, FileJson } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+      else if (c === '"') { inQuotes = false; }
+      else field += c;
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\n' || c === '\r') {
+        if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+        field = ''; row = [];
+      } else field += c;
+    }
+  }
+  if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+  return rows.filter(r => r.length > 1 || r[0]?.trim());
+}
+
+function rowsToQuestions(rows: string[][]) {
+  const header = rows[0].map(h => h.trim().toLowerCase());
+  const idx = (name: string) => header.indexOf(name);
+  const required = ['question', 'optiona', 'optionb', 'optionc', 'optiond', 'correctanswer', 'difficulty', 'category', 'subtopic'];
+  const missing = required.filter(r => idx(r) === -1);
+  if (missing.length > 0) throw new Error(`CSV missing required columns: ${missing.join(', ')}`);
+
+  return rows.slice(1).filter(r => r[idx('question')]?.trim()).map(r => ({
+    question: r[idx('question')],
+    options: [r[idx('optiona')], r[idx('optionb')], r[idx('optionc')], r[idx('optiond')]],
+    correct_answer: r[idx('correctanswer')],
+    difficulty: r[idx('difficulty')],
+    category: r[idx('category')],
+    subtopic: r[idx('subtopic')],
+    language: 'mr',
+    script: 'Devanagari',
+    status: 'pending_review',
+    source_api: 'Marathi Bulk Import'
+  }));
+}
+
+function jsonToQuestions(items: any[]) {
+  return items.map((item) => ({
+    question: item.question,
+    options: item.options,
+    correct_answer: item.correctAnswer,
+    rationale: item.rationale || null,
+    difficulty: item.difficulty || 'Medium',
+    category: item.category || 'General',
+    subtopic: item.subtopic || 'Marathi',
+    language: 'mr',
+    script: 'Devanagari',
+    status: 'pending_review',
+    source_api: 'Marathi Bulk Import'
+  }));
+}
 
 export function MarathiAdminPanel() {
   const [loading, setLoading] = useState(false);
@@ -15,15 +77,33 @@ export function MarathiAdminPanel() {
     }
 
     setLoading(true);
-    // In a real scenario, this would send FormData to a backend route
-    // and parse logic for CSV/JSON.
-    
-    // Simulating parsing and storing in Firestore
-    setTimeout(() => {
-      setLoading(false);
-      toast.success('Marathi Question Bank uploaded and indexed successfully!');
+    try {
+      const file = files[0];
+      const text = await file.text();
+      let toInsert: any[];
+
+      if (file.name.toLowerCase().endsWith('.json')) {
+        const parsed = JSON.parse(text);
+        toInsert = jsonToQuestions(Array.isArray(parsed) ? parsed : parsed.questions || []);
+      } else {
+        const rows = parseCsv(text);
+        if (rows.length < 2) throw new Error('File appears empty.');
+        toInsert = rowsToQuestions(rows);
+      }
+
+      if (toInsert.length === 0) throw new Error('No valid questions found in the file.');
+
+      const { error } = await supabase.from('questions').insert(toInsert);
+      if (error) throw error;
+
+      toast.success(`${toInsert.length} Marathi questions uploaded and queued for review.`);
       setFiles(null);
-    }, 2000);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.message || 'Upload failed. Check the file format.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -33,8 +113,8 @@ export function MarathiAdminPanel() {
           <FileJson className="w-6 h-6 text-blue-600" /> Marathi Question Importer
         </CardTitle>
         <CardDescription>
-          Upload CSV or JSON files containing Marathi questions for MPSC Nursing Mock Tests.
-          The system will auto-index the questions and validate Devanagari Unicode.
+          Upload CSV (question,optionA,optionB,optionC,optionD,correctAnswer,difficulty,category,subtopic) or JSON files
+          containing Marathi questions. Imported questions are queued as "Pending Review" in the shared question bank.
         </CardDescription>
       </CardHeader>
       <CardContent className="p-6">
@@ -42,12 +122,12 @@ export function MarathiAdminPanel() {
              onClick={() => document.getElementById('file-upload')?.click()}>
           <UploadCloud className="w-12 h-12 text-slate-400 mb-4" />
           <p className="text-slate-600 font-medium text-center">Click to browse or drag and drop your files here.</p>
-          <p className="text-sm text-slate-400 mt-2">Supports .json, .csv, and .xlsx</p>
+          <p className="text-sm text-slate-400 mt-2">Supports .json and .csv</p>
           <input
             id="file-upload"
             type="file"
             className="hidden"
-            accept=".json,.csv,.xlsx"
+            accept=".json,.csv"
             onChange={(e) => setFiles(e.target.files)}
           />
         </div>
@@ -62,12 +142,12 @@ export function MarathiAdminPanel() {
         )}
 
         <div className="mt-6 flex justify-end">
-          <Button 
-            disabled={!files || loading} 
+          <Button
+            disabled={!files || loading}
             onClick={handleUpload}
             className="bg-blue-600 hover:bg-blue-700"
           >
-            {loading ? 'Processing & Indexing...' : 'Upload & Sync with Database'}
+            {loading ? 'Processing & Uploading...' : 'Upload & Sync with Database'}
           </Button>
         </div>
       </CardContent>

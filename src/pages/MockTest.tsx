@@ -267,9 +267,14 @@ export default function MockTestPage({ fallbackAdmin }: { fallbackAdmin?: any })
     }, 1500);
 
     try {
+      const { supabase } = await import('@/lib/supabase');
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
       const response = await fetch('/api/ai/generate-questions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           topics: selectedTopicsFlat,
           difficulty: testDifficulty,

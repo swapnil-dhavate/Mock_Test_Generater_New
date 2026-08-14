@@ -162,6 +162,8 @@ export default function ExamPrepPage({ fallbackAdmin }: { fallbackAdmin?: any })
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [userId, setUserId] = useState<string | null>(null);
   const [progressMap, setProgressMap] = useState<Record<string, { status: SyllabusTopic['status']; hours_studied: number }>>({});
+  const [activeTab, setActiveTab] = useState('overview');
+  const [weeklyStudyData, setWeeklyStudyData] = useState<StudyTimeLog[]>(studyTimeData);
 
   // Load the signed-in user's real syllabus progress (fallback admin keeps the static "Not Started" defaults)
   useEffect(() => {
@@ -235,6 +237,67 @@ export default function ExamPrepPage({ fallbackAdmin }: { fallbackAdmin?: any })
     const newHours = (current?.hours_studied || 0) + 1;
     const newStatus = !current || current.status === 'Not Started' ? 'In Progress' : current.status;
     saveTopicProgress(subjectName, topicName, newStatus, newHours);
+
+    if (userId) {
+      supabase.from('study_sessions').insert({ user_id: userId, subject: subjectName, topic: topicName, hours: 1 }).then(({ error }) => {
+        if (error) console.warn('Failed to log study session', error);
+        else fetchWeeklyStudyData();
+      });
+    }
+  };
+
+  const fetchWeeklyStudyData = async () => {
+    if (!userId) return;
+    const start = new Date();
+    start.setDate(start.getDate() - 6);
+    start.setHours(0, 0, 0, 0);
+
+    const { data, error } = await supabase.from('study_sessions').select('hours, logged_at').eq('user_id', userId).gte('logged_at', start.toISOString());
+    if (error || !data) return;
+
+    const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const buckets: Record<string, number> = {};
+    const order: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const key = d.toDateString();
+      buckets[key] = 0;
+      order.push(key);
+    }
+    data.forEach((row: any) => {
+      const key = new Date(row.logged_at).toDateString();
+      if (key in buckets) buckets[key] += Number(row.hours) || 0;
+    });
+    setWeeklyStudyData(order.map(key => ({ day: dayLabels[new Date(key).getDay()], hours: Math.round(buckets[key] * 10) / 10 })));
+  };
+
+  useEffect(() => {
+    if (fallbackAdmin || !userId) return;
+    fetchWeeklyStudyData();
+  }, [fallbackAdmin, userId]);
+
+  const daysUntilExam = useMemo(() => Math.ceil((new Date(examDetails.nextDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)), []);
+
+  const alerts = useMemo(() => {
+    const list: string[] = [];
+    if (daysUntilExam > 0) list.push(`Your exam is in ${daysUntilExam} day${daysUntilExam === 1 ? '' : 's'}.`);
+    const notStarted = mergedSyllabusData.reduce((sum, s) => sum + s.topics.filter(t => t.status === 'Not Started').length, 0);
+    if (notStarted > 0) list.push(`${notStarted} topic${notStarted === 1 ? '' : 's'} not started yet.`);
+    return list;
+  }, [daysUntilExam, mergedSyllabusData]);
+
+  const showAlerts = () => {
+    if (alerts.length === 0) {
+      toast.info('No alerts right now — you\'re all caught up.');
+    } else {
+      alerts.forEach(a => toast.warning(a));
+    }
+  };
+
+  const startSuggestedTopic = () => {
+    updateTopicStatus('Medical Surgical Nursing', 'Cardiovascular System', 'In Progress');
+    setActiveTab('syllabus');
   };
 
   // Filtered Syllabus Logic
@@ -263,13 +326,13 @@ export default function ExamPrepPage({ fallbackAdmin }: { fallbackAdmin?: any })
           <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 px-3 py-1.5 flex items-center gap-2 shadow-sm text-sm">
             <Calendar className="w-4 h-4" /> Exam: {examDetails.nextDate}
           </Badge>
-          <Button size="sm" variant="outline" className="gap-2 bg-white">
-            <Bell className="w-4 h-4 text-blue-500" /> Alerts (2)
+          <Button size="sm" variant="outline" className="gap-2 bg-white" onClick={showAlerts}>
+            <Bell className="w-4 h-4 text-blue-500" /> Alerts ({alerts.length})
           </Button>
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <ScrollArea className="w-full max-w-full">
           <TabsList className="mb-4 inline-flex w-full justify-start md:w-auto overflow-x-auto p-1 bg-slate-100/80 rounded-xl shadow-inner border">
             <TabsTrigger value="overview" className="rounded-lg px-4 py-2">Overview</TabsTrigger>
@@ -347,7 +410,7 @@ export default function ExamPrepPage({ fallbackAdmin }: { fallbackAdmin?: any })
                   <p className="text-sm text-slate-600 mb-5 leading-relaxed">
                     Based on recent trends, <strong className="text-slate-900 bg-purple-50 px-1 rounded">ECG Interpretation</strong> has high weightage. You haven't started this yet.
                   </p>
-                  <Button size="sm" className="w-full bg-purple-600 hover:bg-purple-700 text-white shadow-sm h-10">Start Topic Now</Button>
+                  <Button size="sm" className="w-full bg-purple-600 hover:bg-purple-700 text-white shadow-sm h-10" onClick={startSuggestedTopic}>Start Topic Now</Button>
                 </CardContent>
               </Card>
             </div>
@@ -486,7 +549,7 @@ export default function ExamPrepPage({ fallbackAdmin }: { fallbackAdmin?: any })
               </CardHeader>
               <CardContent className="h-80 pt-6">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={studyTimeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <BarChart data={weeklyStudyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                     <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 13}} dy={10} />
                     <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 13}} />
@@ -589,7 +652,7 @@ export default function ExamPrepPage({ fallbackAdmin }: { fallbackAdmin?: any })
                   <h3 className="font-bold text-xl text-slate-800">PDF Notes</h3>
                   <p className="text-sm text-slate-500 mt-2 leading-relaxed">Download topic-wise standard notes, summaries, and cheat sheets.</p>
                 </div>
-                <Button variant="outline" className="w-full mt-4 group-hover:bg-red-50 group-hover:text-red-600 group-hover:border-red-200 transition-colors bg-white">Browse PDFs</Button>
+                <Button variant="outline" disabled title="Coming soon" className="w-full mt-4 bg-white opacity-60 cursor-not-allowed">Coming Soon</Button>
               </CardContent>
             </Card>
             
@@ -602,7 +665,7 @@ export default function ExamPrepPage({ fallbackAdmin }: { fallbackAdmin?: any })
                   <h3 className="font-bold text-xl text-slate-800">Video Lectures</h3>
                   <p className="text-sm text-slate-500 mt-2 leading-relaxed">AI Curated targeted video explanations for challenging concepts.</p>
                 </div>
-                <Button variant="outline" className="w-full mt-4 group-hover:bg-indigo-50 group-hover:text-indigo-600 group-hover:border-indigo-200 transition-colors bg-white">Watch Now</Button>
+                <Button variant="outline" disabled title="Coming soon" className="w-full mt-4 bg-white opacity-60 cursor-not-allowed">Coming Soon</Button>
               </CardContent>
             </Card>
 
@@ -650,8 +713,8 @@ export default function ExamPrepPage({ fallbackAdmin }: { fallbackAdmin?: any })
                       </TableCell>
                       <TableCell className="text-right pr-6">
                         <div className="flex justify-end gap-3">
-                           <Button size="sm" variant="outline" className="gap-2 bg-white hover:bg-slate-50 hover:text-blue-600 border-slate-200 shadow-sm" title="Download PDF">
-                             <Download className="w-4 h-4" /> <span className="hidden sm:inline">PDF</span>
+                           <Button size="sm" variant="outline" disabled className="gap-2 bg-white opacity-60 cursor-not-allowed border-slate-200 shadow-sm" title="Coming soon">
+                             <Download className="w-4 h-4" /> <span className="hidden sm:inline">Coming Soon</span>
                            </Button>
                            <Button onClick={() => navigate('/test')} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-medium">Solve Now</Button>
                         </div>

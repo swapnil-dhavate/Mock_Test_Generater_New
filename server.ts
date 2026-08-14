@@ -3,8 +3,67 @@ import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
-import { AIGateway } from "./server/ai-gateway";
+import { createClient } from "@supabase/supabase-js";
+import { AIGateway, Question } from "./server/ai-gateway";
 import { fetchOpenTriviaQuestions } from "./server/data-sources/opentdb";
+
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
+
+// Builds a Supabase client scoped to the calling user's own JWT (forwarded from the browser),
+// so question-bank reads/writes respect RLS as that authenticated user. No service-role key involved.
+function getScopedSupabase(req: express.Request) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: authHeader } }
+  });
+}
+
+function questionToDbRow(q: any) {
+  return {
+    question: q.question,
+    options: q.options,
+    correct_answer: q.correctAnswer,
+    rationale: q.rationale || q.explanation || null,
+    option_analysis: q.optionAnalysis || null,
+    key_concept: q.keyConcept || null,
+    quick_revision: q.quickRevision || null,
+    memory_trick: q.memoryTrick || null,
+    clinical_significance: q.clinicalSignificance || null,
+    exam_tip: q.examTip || null,
+    difficulty: q.difficulty,
+    category: q.category,
+    subtopic: q.subtopic,
+    source_api: q.sourceAPI || null,
+    language: q.language || 'en',
+    script: q.script || 'Latin'
+  };
+}
+
+function dbRowToQuestion(row: any) {
+  return {
+    id: row.id,
+    question: row.question,
+    options: row.options,
+    correctAnswer: row.correct_answer,
+    explanation: row.rationale,
+    rationale: row.rationale,
+    optionAnalysis: row.option_analysis,
+    keyConcept: row.key_concept,
+    quickRevision: row.quick_revision,
+    memoryTrick: row.memory_trick,
+    clinicalSignificance: row.clinical_significance,
+    examTip: row.exam_tip,
+    difficulty: row.difficulty,
+    category: row.category,
+    subtopic: row.subtopic,
+    sourceAPI: row.source_api,
+    language: row.language,
+    script: row.script,
+    encoding: 'UTF-8'
+  };
+}
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
@@ -41,10 +100,7 @@ app.use(express.json());
 // API Routes
 app.get("/api/admin/gateway-status", (req, res) => {
   res.json({
-    providers: [
-      { name: "Gemini Pro", available: true, latency: "120ms" },
-      { name: "Gemini Flash", available: true, latency: "45ms" }
-    ],
+    providers: aiGateway.getProviderStatus(),
     dataSources: [
       { name: "OpenTrivia", available: true, count: questionBank.length }
     ]
@@ -56,18 +112,38 @@ app.post("/api/ai/generate-questions", async (req, res) => {
   try {
     const { topics = [], difficulty, count = 5, categoryMode = 'technical' } = req.body;
     const topicString = Array.isArray(topics) && topics.length > 0 ? topics.join(', ') : 'General Knowledge';
-    
-    // Filter from existing questionBank Cache
-    let matched = questionBank.filter(q => {
-      const matchesTopic = Array.isArray(topics) && topics.length > 0 
-         ? (topics.includes(q.subtopic) || topics.includes(q.category)) 
-         : true;
-      
-      // Custom simple difficulty mapping because "Mixed" is usually "Mixed (Adaptive)"
-      const isDifficultyMatched = difficulty.includes('Mixed') ? true : q.difficulty === difficulty;
+    const scopedSupabase = getScopedSupabase(req);
 
-      return matchesTopic && isDifficultyMatched;
-    });
+    // Prefer the real, persistent question bank (shared across every user/deploy) over the ephemeral in-memory one.
+    let matched: any[] = [];
+    if (scopedSupabase) {
+      try {
+        let query = scopedSupabase.from('questions').select('*').eq('status', 'published');
+        if (!difficulty.includes('Mixed')) query = query.eq('difficulty', difficulty);
+        const { data, error } = await query.limit(500);
+        if (!error && data) {
+          matched = data
+            .filter((row: any) => {
+              if (!Array.isArray(topics) || topics.length === 0) return true;
+              return topics.some((t: string) => t.includes(row.subtopic) || t.includes(row.category) || row.subtopic === t || row.category === t);
+            })
+            .map(dbRowToQuestion);
+        }
+      } catch (e) {
+        console.warn("Supabase question-bank lookup failed, falling back to in-memory cache", e);
+      }
+    }
+
+    // Fall back to the ephemeral in-memory cache if Supabase wasn't reachable or returned nothing
+    if (matched.length === 0) {
+      matched = questionBank.filter(q => {
+        const matchesTopic = Array.isArray(topics) && topics.length > 0
+           ? (topics.includes(q.subtopic) || topics.includes(q.category))
+           : true;
+        const isDifficultyMatched = difficulty.includes('Mixed') ? true : q.difficulty === difficulty;
+        return matchesTopic && isDifficultyMatched;
+      });
+    }
 
     // Shuffle matched questions to provide variety
     matched = matched.sort(() => Math.random() - 0.5);
@@ -152,7 +228,7 @@ app.post("/api/ai/generate-questions", async (req, res) => {
       if (!q.id) {
         q.id = Math.random().toString(36).substring(2, 12) + Date.now().toString(36);
       }
-      
+
       let language = 'en';
       if (topics.includes('Marathi') || q.subtopic === 'Marathi' || topicString.toLowerCase().includes('marathi')) {
           language = 'mr';
@@ -163,14 +239,21 @@ app.post("/api/ai/generate-questions", async (req, res) => {
 
       questionBank.push(q);
     }
-    
+
     // Merge External Data
     if (externalQuestions.length > 0) {
        newQs.push(...externalQuestions);
     }
-    
+
     // Fire and forget cache save
     setTimeout(saveCache, 0);
+
+    // Persist newly generated questions to the real, shared question bank (fire and forget)
+    if (scopedSupabase && newQs.length > 0) {
+      scopedSupabase.from('questions').insert(newQs.map(questionToDbRow)).then(({ error }) => {
+        if (error) console.warn("Failed to persist generated questions to Supabase", error);
+      });
+    }
 
     // Combine matched from cache and newly generated questions
     const finalSet = [...matched, ...newQs].sort(() => Math.random() - 0.5).slice(0, count);

@@ -108,6 +108,10 @@ export class AIGateway {
     this.providers.push(new GroqProvider());
   }
 
+  getProviderStatus(): { name: string; available: boolean }[] {
+    return this.providers.map(p => ({ name: p.name, available: p.isAvailable() }));
+  }
+
   async generateQuestions(prompt: string, sysInst: string, count: number): Promise<Question[]> {
     let lastError = null;
     for (const provider of this.providers) {

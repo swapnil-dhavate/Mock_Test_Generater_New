@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Stethoscope, Phone, Mail, ArrowRight, CheckCircle2, ShieldCheck, Lock, User, KeyRound, Loader2 } from 'lucide-react';
+import { Stethoscope, Mail, CheckCircle2, ShieldCheck, KeyRound, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -48,7 +48,7 @@ export default function LandingPage() {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -70,44 +70,54 @@ export default function LandingPage() {
     }
   };
 
+  // Real accounts can log in with either their actual email, or a short "username" that maps to a
+  // dedicated internal email behind the scenes (e.g. admin-provisioned accounts without a real inbox).
+  const resolveSyntheticEmail = (input: string) => `${input.trim().toLowerCase().replace(/[^a-z0-9]/g, '')}@nursai.internal`;
+
   const handleLogin = async (e: React.FormEvent) => {
     e?.preventDefault?.();
     if (!loginEmail || !loginPassword) return;
 
     setLoading(true);
-    
+
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      let { error } = await supabase.auth.signInWithPassword({
         email: loginEmail,
         password: loginPassword,
       });
 
-      if (error) throw error;
-
-    } catch(error: any) {
-      console.error(error);
-      
-      // Fallback logic check
-      const fallbackEnabled = import.meta.env.VITE_ENABLE_ADMIN_FALLBACK !== 'false';
-      if (fallbackEnabled) {
-         const adminUser = import.meta.env.VITE_ADMIN_USERNAME || "Admin";
-         const adminPass = import.meta.env.VITE_ADMIN_PASSWORD || "Admin";
-         
-         if (loginEmail === adminUser && loginPassword === adminPass) {
-            const adminData = {
-                uid: "admin-local",
-                role: "admin",
-                username: "Admin",
-                isFallbackAdmin: true
-            };
-            sessionStorage.setItem('fallback_admin', JSON.stringify(adminData));
-            toast.success("Admin Fallback Login Successful");
-            window.location.reload();
-            return;
-         }
+      if (error) {
+        const synthetic = resolveSyntheticEmail(loginEmail);
+        if (synthetic !== loginEmail.trim().toLowerCase()) {
+          const retry = await supabase.auth.signInWithPassword({ email: synthetic, password: loginPassword });
+          error = retry.error;
+        }
       }
-      
+
+      if (error) throw error;
+    } catch (error: any) {
+      console.error(error);
       toast.error(error.message || "Invalid Email or Password");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSent, setResetSent] = useState(false);
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e?.preventDefault?.();
+    if (!resetEmail) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: window.location.origin,
+      });
+      if (error) throw error;
+      setResetSent(true);
+    } catch (error: any) {
+      toast.error(error.message || "Could not send reset link.");
     } finally {
       setLoading(false);
     }
@@ -167,8 +177,6 @@ export default function LandingPage() {
     </motion.div>
   );
 
-  const isFallbackEnabled = import.meta.env.VITE_ENABLE_ADMIN_FALLBACK === 'true' || import.meta.env.VITE_ENABLE_ADMIN_FALLBACK === undefined;
-
   const renderLoginView = () => (
     <motion.div key="login" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-md w-full mx-auto p-6 md:p-10 bg-white rounded-[2rem] shadow-2xl border border-slate-100">
       <div className="mb-8">
@@ -211,29 +219,6 @@ export default function LandingPage() {
         Google Account
       </Button>
 
-      {isFallbackEnabled && (
-        <Button 
-          variant="outline" 
-          className="w-full mt-4 h-12 rounded-xl border-red-200 text-red-600 hover:bg-red-50" 
-          onClick={(e) => {
-            e.preventDefault();
-            const adminData = {
-                uid: "admin-local",
-                role: "admin",
-                username: import.meta.env.VITE_ADMIN_USERNAME || "Admin",
-                isFallbackAdmin: true
-            };
-            sessionStorage.setItem('fallback_admin', JSON.stringify(adminData));
-            toast.success("Admin Fallback Login Successful");
-            setTimeout(() => {
-              window.location.reload();
-            }, 500);
-          }}>
-          <ShieldCheck className="w-5 h-5 mr-3" />
-          Admin Login (Fallback)
-        </Button>
-      )}
-      
       <p className="text-center mt-8 text-slate-500">
         Don't have an account? <button onClick={() => setView('register')} className="text-blue-600 font-medium hover:underline">Sign up</button>
       </p>
@@ -291,10 +276,18 @@ export default function LandingPage() {
           {view === 'forgot-password' && (
              <motion.div key="forgot-password" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-md w-full mx-auto p-10 bg-white rounded-[2rem] shadow-2xl text-center">
                  <h2 className="text-2xl font-bold mb-4">Forgot Password</h2>
-                 <p className="text-slate-500 mb-6">Enter your email address to reset.</p>
-                 <Input className="mb-4" placeholder="Email Address" type="email" />
-                 <Button className="w-full h-12 rounded-xl bg-blue-600">Send Reset Link</Button>
-                 <button onClick={() => setView('login')} className="mt-4 text-sm text-slate-500">Back to Login</button>
+                 {resetSent ? (
+                   <p className="text-slate-600 mb-6">If an account exists for that email, a reset link is on its way. Check your inbox.</p>
+                 ) : (
+                   <>
+                     <p className="text-slate-500 mb-6">Enter your email address to reset.</p>
+                     <Input className="mb-4" placeholder="Email Address" type="email" value={resetEmail} onChange={e => setResetEmail(e.target.value)} />
+                     <Button disabled={loading} onClick={handleForgotPassword} className="w-full h-12 rounded-xl bg-blue-600">
+                       {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Send Reset Link'}
+                     </Button>
+                   </>
+                 )}
+                 <button onClick={() => { setView('login'); setResetSent(false); }} className="mt-4 text-sm text-slate-500">Back to Login</button>
              </motion.div>
           )}
         </AnimatePresence>

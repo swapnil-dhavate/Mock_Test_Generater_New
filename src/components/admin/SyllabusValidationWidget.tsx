@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle2, AlertCircle, RefreshCw, Plus, Zap, BookOpen } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, AlertCircle, RefreshCw, Plus, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { SyllabusMasterList, TECHNICAL_SUBJECTS, NON_TECHNICAL_SUBJECTS } from '../../lib/syllabus';
 
@@ -13,50 +13,47 @@ export function SyllabusValidationWidget() {
   const extractExistingSubjects = () => {
     return [...TECHNICAL_SUBJECTS.map(s => s.name), ...NON_TECHNICAL_SUBJECTS.map(s => s.name)];
   };
-  
+
   const extractExistingTopics = () => {
     return [...TECHNICAL_SUBJECTS.flatMap(s => s.topics), ...NON_TECHNICAL_SUBJECTS.flatMap(s => s.topics)];
   };
 
-  const handleValidate = async () => {
+  const handleValidate = () => {
     setIsValidating(true);
-    
-    // Simulate API delay for AI analysis
-    setTimeout(() => {
-      const existingSubjects = extractExistingSubjects();
-      const existingTopics = extractExistingTopics();
 
-      const missingTechnical = SyllabusMasterList.technical.filter(s => !existingSubjects.includes(s));
-      const missingNonTechnical = SyllabusMasterList.nonTechnical.filter(s => !existingSubjects.includes(s));
-      const missingHighPriority = SyllabusMasterList.highPriority.filter(t => !existingTopics.includes(t));
-      const missingMhSpecific = SyllabusMasterList.mhSpecific.filter(t => !existingTopics.includes(t) && !existingSubjects.includes(t));
+    const existingSubjects = extractExistingSubjects();
+    const existingTopics = extractExistingTopics();
 
-      const report = {
-        technicalCovered: SyllabusMasterList.technical.length - missingTechnical.length,
-        technicalTotal: SyllabusMasterList.technical.length,
-        nonTechnicalCovered: SyllabusMasterList.nonTechnical.length - missingNonTechnical.length,
-        nonTechnicalTotal: SyllabusMasterList.nonTechnical.length,
-        highPriorityCovered: SyllabusMasterList.highPriority.length - missingHighPriority.length,
-        highPriorityTotal: SyllabusMasterList.highPriority.length,
-        mhSpecificCovered: SyllabusMasterList.mhSpecific.length - missingMhSpecific.length,
-        mhSpecificTotal: SyllabusMasterList.mhSpecific.length,
-        missingData: {
-          technical: missingTechnical,
-          nonTechnical: missingNonTechnical,
-          highPriority: missingHighPriority,
-          mhSpecific: missingMhSpecific
-        }
-      };
+    const missingTechnical = SyllabusMasterList.technical.filter(s => !existingSubjects.includes(s));
+    const missingNonTechnical = SyllabusMasterList.nonTechnical.filter(s => !existingSubjects.includes(s));
+    const missingHighPriority = SyllabusMasterList.highPriority.filter(t => !existingTopics.includes(t));
+    const missingMhSpecific = SyllabusMasterList.mhSpecific.filter(t => !existingTopics.includes(t) && !existingSubjects.includes(t));
 
-      setValidationResult(report);
-      setIsValidating(false);
-      
-      if (missingTechnical.length > 0 || missingNonTechnical.length > 0 || missingHighPriority.length > 0 || missingMhSpecific.length > 0) {
-        toast.warning('Syllabus gaps detected!');
-      } else {
-        toast.success('Syllabus is fully comprehensive!');
+    const report = {
+      technicalCovered: SyllabusMasterList.technical.length - missingTechnical.length,
+      technicalTotal: SyllabusMasterList.technical.length,
+      nonTechnicalCovered: SyllabusMasterList.nonTechnical.length - missingNonTechnical.length,
+      nonTechnicalTotal: SyllabusMasterList.nonTechnical.length,
+      highPriorityCovered: SyllabusMasterList.highPriority.length - missingHighPriority.length,
+      highPriorityTotal: SyllabusMasterList.highPriority.length,
+      mhSpecificCovered: SyllabusMasterList.mhSpecific.length - missingMhSpecific.length,
+      mhSpecificTotal: SyllabusMasterList.mhSpecific.length,
+      missingData: {
+        technical: missingTechnical,
+        nonTechnical: missingNonTechnical,
+        highPriority: missingHighPriority,
+        mhSpecific: missingMhSpecific
       }
-    }, 1500);
+    };
+
+    setValidationResult(report);
+    setIsValidating(false);
+
+    if (missingTechnical.length > 0 || missingNonTechnical.length > 0 || missingHighPriority.length > 0 || missingMhSpecific.length > 0) {
+      toast.warning('Syllabus gaps detected!');
+    } else {
+      toast.success('Syllabus is fully comprehensive!');
+    }
   };
 
   const calculateScore = (report: any) => {
@@ -74,49 +71,26 @@ export function SyllabusValidationWidget() {
     return 'text-red-500';
   };
 
-  const autoFixGaps = () => {
-    setIsValidating(true);
-    setTimeout(() => {
-      // In a real app this would call an API/Firebase to save new subjects
-      toast.success('Missing subjects and topics automatically generated and indexed via AI.');
-      // Simulating a perfect score next time
-      setValidationResult((prev: any) => ({
-        ...prev,
-        technicalCovered: prev.technicalTotal,
-        nonTechnicalCovered: prev.nonTechnicalTotal,
-        highPriorityCovered: prev.highPriorityTotal,
-        mhSpecificCovered: prev.mhSpecificTotal,
-        missingData: {
-          technical: [],
-          nonTechnical: [],
-          highPriority: [],
-          mhSpecific: []
-        }
-      }));
-      setIsValidating(false);
-    }, 2000);
-  };
-
   return (
     <Card className="border shadow-md bg-white">
       <CardHeader className="bg-slate-50 border-b border-slate-100 flex flex-row items-center justify-between py-4 rounded-t-xl">
         <div>
           <CardTitle className="text-xl flex items-center gap-2 text-slate-800">
-            <BookOpen className="w-5 h-5 text-indigo-600" /> Syllabus Coverage Engine
+            <BookOpen className="w-5 h-5 text-indigo-600" /> Syllabus Coverage Check
           </CardTitle>
           <CardDescription className="mt-1">
-            AI-powered validation for MH Nursing & aptitude exam syllabus.
+            Compares your current subject/topic catalog (src/lib/syllabus.ts) against the full MH Nursing & aptitude syllabus reference list.
           </CardDescription>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleValidate} 
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleValidate}
           disabled={isValidating}
           className="bg-white"
         >
-          {isValidating ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
-          Run Analysis
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Run Coverage Check
         </Button>
       </CardHeader>
 
@@ -124,21 +98,21 @@ export function SyllabusValidationWidget() {
         {!validationResult ? (
            <div className="text-center py-12 bg-slate-50 rounded-xl border border-slate-100 border-dashed">
              <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-             <h3 className="text-lg font-medium text-slate-700">No Assessment Run</h3>
+             <h3 className="text-lg font-medium text-slate-700">No Check Run Yet</h3>
              <p className="text-slate-500 max-w-sm mx-auto mt-2 text-sm">
-               Run the syllabus validation engine to identify missing technical, non-technical, and state-specific topics.
+               Run the coverage check to identify subjects and topics missing from the technical, non-technical, and state-specific syllabus.
              </p>
              <Button onClick={handleValidate} className="mt-6 bg-indigo-600 hover:bg-indigo-700">
-                Run AI Analysis Now
+                Run Coverage Check
              </Button>
            </div>
         ) : (
           <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
              <div className="flex flex-col md:flex-row gap-6">
-                
+
                 {/* Score Widget */}
                 <div className="w-full md:w-1/3 bg-slate-50 rounded-xl border border-slate-100 p-6 flex flex-col items-center justify-center text-center shadow-sm">
-                   <h4 className="text-sm font-semibold tracking-wider text-slate-500 uppercase mb-2">Exam Readiness Score</h4>
+                   <h4 className="text-sm font-semibold tracking-wider text-slate-500 uppercase mb-2">Coverage Score</h4>
                    <div className={`text-6xl font-bold font-mono tracking-tighter ${getScoreColor(score)}`}>
                       {score}%
                    </div>
@@ -166,7 +140,7 @@ export function SyllabusValidationWidget() {
                        <div className="h-full bg-blue-500" style={{ width: `${(validationResult.technicalCovered / validationResult.technicalTotal) * 100}%`}}></div>
                      </div>
                    </div>
-                   
+
                    <div className="p-4 border rounded-xl bg-white shadow-sm">
                      <div className="text-sm text-slate-500 mb-1">General Aptitude</div>
                      <div className="text-2xl font-semibold text-slate-800">
@@ -199,16 +173,14 @@ export function SyllabusValidationWidget() {
                 </div>
              </div>
 
-             {/* Missing Topics List & Actions */}
+             {/* Missing Topics List */}
              {score < 100 && (
                <div className="mt-8 border rounded-xl overflow-hidden shadow-sm">
-                 <div className="bg-amber-50 border-b border-amber-100 p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-amber-800 font-semibold shrink-0">
-                      <AlertCircle className="w-5 h-5" /> Detailed Gap Analysis
-                    </div>
-                    <Button onClick={autoFixGaps} size="sm" className="bg-amber-600 hover:bg-amber-700 text-white shadow-sm whitespace-nowrap">
-                       <Zap className="w-4 h-4 mr-2" /> Auto-Fix with AI
-                    </Button>
+                 <div className="bg-amber-50 border-b border-amber-100 p-4 flex items-center gap-2 text-amber-800 font-semibold">
+                    <AlertCircle className="w-5 h-5" /> Detailed Gap Analysis
+                 </div>
+                 <div className="p-4 bg-white border-b border-amber-100 text-xs text-slate-500">
+                   These aren't saved anywhere automatically — add them to <code className="bg-slate-100 px-1 py-0.5 rounded">src/lib/syllabus.ts</code> to close the gap.
                  </div>
                  <div className="p-0">
                     <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x border-slate-100">
@@ -252,7 +224,7 @@ export function SyllabusValidationWidget() {
                          ) : (
                            <p className="text-sm text-slate-500 flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> All priority clinicals covered</p>
                          )}
-                         
+
                          <h5 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mt-6 pt-4 border-t">Missing Maharashtra / Marathi Focus</h5>
                          {validationResult.missingData.mhSpecific.length > 0 ? (
                            <div className="flex flex-wrap gap-2">
@@ -270,16 +242,16 @@ export function SyllabusValidationWidget() {
                  </div>
                </div>
              )}
-             
+
              {score === 100 && (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 mt-6 flex gap-4">
                    <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
                       <CheckCircle2 className="w-6 h-6 text-emerald-600" />
                    </div>
                    <div>
-                     <h4 className="text-lg font-semibold text-emerald-800 mb-1">Assessment Engine Ready</h4>
+                     <h4 className="text-lg font-semibold text-emerald-800 mb-1">Syllabus Fully Covered</h4>
                      <p className="text-emerald-700/80">
-                        The current syllabus covers 100% of the Maharashtra Nursing and Aptitude syllabus requirements. The topic selector is fully populated and AI generators are primed for these topics.
+                        The current syllabus catalog covers 100% of the Maharashtra Nursing and Aptitude syllabus reference list.
                      </p>
                    </div>
                 </div>
