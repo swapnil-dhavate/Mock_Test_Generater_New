@@ -186,10 +186,10 @@ export default function LandingPage() {
       
       <form onSubmit={handleLogin} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Email Address</label>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Email or Username</label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <Input required type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} className="pl-10 h-12 rounded-xl text-lg" placeholder="john.doe@example.com" />
+            <Input required type="text" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} className="pl-10 h-12 rounded-xl text-lg" placeholder="john.doe@example.com" />
           </div>
         </div>
         <div>
