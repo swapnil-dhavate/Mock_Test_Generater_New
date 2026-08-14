@@ -38,7 +38,11 @@ export default function AiMentorPage({ fallbackAdmin }: { fallbackAdmin?: any })
     setLoading(true);
 
     try {
-      const response = await fetch('/api/ai/doubt-solver', {});
+      const response = await fetch('/api/ai/doubt-solver', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMsg.content })
+      });
       if (!response.ok) {
         const text = await response.text();
         throw new Error(`API Error ${response.status}: ${text}`);
