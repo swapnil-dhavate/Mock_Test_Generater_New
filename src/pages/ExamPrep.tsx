@@ -158,6 +158,12 @@ export default function ExamPrepPage({ fallbackAdmin }: { fallbackAdmin?: any })
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
 
+  const overallProgress = useMemo(() => {
+    if (initialSyllabusData.length === 0) return 0;
+    const total = initialSyllabusData.reduce((sum, subject) => sum + subject.progress, 0);
+    return Math.round(total / initialSyllabusData.length);
+  }, []);
+
   // Filtered Syllabus Logic
   const filteredSyllabus = useMemo(() => {
     return initialSyllabusData.map((subject) => {
@@ -249,10 +255,10 @@ export default function ExamPrepPage({ fallbackAdmin }: { fallbackAdmin?: any })
                   <CardTitle className="text-blue-50 font-medium text-base">Overall Preparation Progress</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-5xl font-extrabold mb-4 tracking-tight">32%</div>
-                  <Progress value={32} className="h-3 bg-blue-900/50 [&>div]:bg-white rounded-full" />
+                  <div className="text-5xl font-extrabold mb-4 tracking-tight">{overallProgress}%</div>
+                  <Progress value={overallProgress} className="h-3 bg-blue-900/50 [&>div]:bg-white rounded-full" />
                   <p className="text-sm text-blue-100 mt-4 font-medium flex items-center justify-between">
-                    <span>Estimated completion: 45 days</span>
+                    <span>{overallProgress > 0 ? 'Keep going!' : 'Start a topic to begin tracking'}</span>
                     <TrendingUp className="w-4 h-4 opacity-80" />
                   </p>
                 </CardContent>
