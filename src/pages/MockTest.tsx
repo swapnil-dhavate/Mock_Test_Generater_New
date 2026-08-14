@@ -29,6 +29,35 @@ interface Question {
   encoding?: string;
 }
 
+// AI providers return correctAnswer in inconsistent formats: a bare letter ("C"),
+// a letter with punctuation ("C." / "C)"), or the full option text ("Option A").
+// This resolves all of them to the actual index into q.options so comparisons
+// against the full-text answers stored in state work regardless of format.
+function getCorrectOptionIndex(q: Question): number {
+  const trimmed = (q.correctAnswer || '').trim();
+  if (/^[A-Da-d]$/.test(trimmed)) {
+    return trimmed.toUpperCase().charCodeAt(0) - 65;
+  }
+  const prefixMatch = trimmed.match(/^([A-Da-d])[\.\)]/);
+  if (prefixMatch) {
+    return prefixMatch[1].toUpperCase().charCodeAt(0) - 65;
+  }
+  const exactIdx = q.options.findIndex(o => o.trim() === trimmed);
+  if (exactIdx !== -1) return exactIdx;
+  return q.options.findIndex(o => o.replace(/^[A-Da-d][\.\)]\s*/, '').trim() === trimmed);
+}
+
+function isCorrectAnswer(q: Question, userAnswer?: string): boolean {
+  if (!userAnswer) return false;
+  const idx = getCorrectOptionIndex(q);
+  if (idx < 0 || idx >= q.options.length) return userAnswer.trim() === (q.correctAnswer || '').trim();
+  return q.options[idx] === userAnswer;
+}
+
+function isCorrectOptionIndex(q: Question, optionIndex: number): boolean {
+  return getCorrectOptionIndex(q) === optionIndex;
+}
+
 import { TECHNICAL_SUBJECTS, NON_TECHNICAL_SUBJECTS } from '../lib/syllabus';
 
 import { LoadingButton } from '@/components/ui/loading-button';
@@ -157,7 +186,7 @@ export default function MockTestPage({ fallbackAdmin }: { fallbackAdmin?: any })
         // Identify weak areas dynamically for prompt
         const weakCategories = new Set<string>();
         questions.forEach((q, idx) => {
-           if (answers[idx] !== q.correctAnswer) weakCategories.add(q.category);
+           if (!isCorrectAnswer(q, answers[idx])) weakCategories.add(q.category);
         });
         const prompt = Array.from(weakCategories).slice(0, 5).join(', ');
         
@@ -317,7 +346,7 @@ export default function MockTestPage({ fallbackAdmin }: { fallbackAdmin?: any })
       
       if (session?.user) {
         const correctCount = questions.reduce((acc, q, idx) => {
-           if (answers[idx] === q.correctAnswer) return acc + 1;
+           if (isCorrectAnswer(q, answers[idx])) return acc + 1;
            return acc;
         }, 0);
         
@@ -363,7 +392,7 @@ export default function MockTestPage({ fallbackAdmin }: { fallbackAdmin?: any })
            // Identify weak topics for this test
            const tempWeak: string[] = [];
            questions.forEach((q, idx) => {
-              if (answers[idx] !== q.correctAnswer && !tempWeak.includes(q.category)) {
+              if (!isCorrectAnswer(q, answers[idx]) && !tempWeak.includes(q.category)) {
                  tempWeak.push(q.category);
               }
            });
@@ -381,7 +410,7 @@ export default function MockTestPage({ fallbackAdmin }: { fallbackAdmin?: any })
         } else {
            const tempWeak: string[] = [];
            questions.forEach((q, idx) => {
-              if (answers[idx] !== q.correctAnswer && !tempWeak.includes(q.category)) {
+              if (!isCorrectAnswer(q, answers[idx]) && !tempWeak.includes(q.category)) {
                  tempWeak.push(q.category);
               }
            });
@@ -697,7 +726,7 @@ export default function MockTestPage({ fallbackAdmin }: { fallbackAdmin?: any })
       categoryStats[q.category].total++;
 
       if (!answers[idx]) unattempted++;
-      else if (answers[idx] === q.correctAnswer) {
+      else if (isCorrectAnswer(q, answers[idx])) {
         correct++;
         score += 1;
         categoryStats[q.category].correct++;
@@ -871,8 +900,8 @@ export default function MockTestPage({ fallbackAdmin }: { fallbackAdmin?: any })
       if (reviewFilter === 'all') return true;
       const userAnswer = answers[idx];
       if (reviewFilter === 'skipped') return !userAnswer;
-      if (reviewFilter === 'correct') return userAnswer === q.correctAnswer;
-      if (reviewFilter === 'incorrect') return userAnswer && userAnswer !== q.correctAnswer;
+      if (reviewFilter === 'correct') return isCorrectAnswer(q, userAnswer);
+      if (reviewFilter === 'incorrect') return !!userAnswer && !isCorrectAnswer(q, userAnswer);
       return true;
     });
 
@@ -921,7 +950,7 @@ export default function MockTestPage({ fallbackAdmin }: { fallbackAdmin?: any })
                   {(() => {
                     const { q: reviewQ, idx: globalIdx } = currentReview;
                     const userAnswer = answers[globalIdx];
-                    const isCorrect = userAnswer === reviewQ.correctAnswer;
+                    const isCorrect = isCorrectAnswer(reviewQ, userAnswer);
                     const isUnattempted = !userAnswer;
 
                     return (
@@ -932,9 +961,9 @@ export default function MockTestPage({ fallbackAdmin }: { fallbackAdmin?: any })
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 mt-4">
-                          {reviewQ.options.map((opt) => {
+                          {reviewQ.options.map((opt, optIdx) => {
                             const isThisOptionUserAnswer = opt === userAnswer;
-                            const isThisOptionCorrectAnswer = opt === reviewQ.correctAnswer;
+                            const isThisOptionCorrectAnswer = isCorrectOptionIndex(reviewQ, optIdx);
                             
                             let bg = 'bg-white border-slate-200 text-slate-700';
                             let Icon = <div className="w-5 h-5 rounded-full border-2 border-slate-300" />;
@@ -972,7 +1001,7 @@ export default function MockTestPage({ fallbackAdmin }: { fallbackAdmin?: any })
                               <h4 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2"><LayoutGrid className="w-5 h-5 text-slate-400" /> Option Analysis</h4>
                               <div className="space-y-4">
                                 {Object.entries(reviewQ.optionAnalysis).map(([letter, analysis]) => {
-                                   const isCorrectOption = reviewQ.correctAnswer.startsWith(letter);
+                                   const isCorrectOption = isCorrectOptionIndex(reviewQ, letter.trim().toUpperCase().charCodeAt(0) - 65);
                                    return (
                                      <div key={letter} className="flex gap-4">
                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-bold ${isCorrectOption ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
@@ -1051,7 +1080,7 @@ export default function MockTestPage({ fallbackAdmin }: { fallbackAdmin?: any })
                         {filteredQuestions.map(({ q, idx: globalIdx }, localIdx) => {
                           const isCurrent = localIdx === reviewIndex;
                           const userAnswer = answers[globalIdx];
-                          const isCorrect = userAnswer === q.correctAnswer;
+                          const isCorrect = isCorrectAnswer(q, userAnswer);
                           
                           let bgClass = "bg-slate-100 border-slate-200 text-slate-600";
                           if (!userAnswer) bgClass = "bg-slate-100 border-slate-300 text-slate-500";
@@ -1132,9 +1161,9 @@ export default function MockTestPage({ fallbackAdmin }: { fallbackAdmin?: any })
           )}
 
           <div className={`
-             absolute inset-y-0 right-0 lg:left-0 lg:right-auto z-40 bg-white shadow-2xl lg:shadow-none lg:border-r border-slate-200
+             absolute inset-y-0 right-0 lg:relative lg:inset-auto lg:left-0 lg:right-auto z-40 bg-white shadow-2xl lg:shadow-none lg:border-r border-slate-200
              w-[280px] sm:w-[320px] transition-transform duration-300 ease-in-out shrink-0 flex flex-col
-             ${navigatorCollapsed ? 'translate-x-full lg:translate-x-0 lg:relative' : 'translate-x-0'}
+             ${navigatorCollapsed ? 'translate-x-full lg:translate-x-0' : 'translate-x-0'}
           `}>
              <div className="p-4 border-b border-slate-800 flex items-center justify-between lg:justify-center bg-slate-900 text-white shrink-0">
                <h2 className="font-semibold flex items-center gap-2"><Navigation className="w-4 h-4 text-blue-400" /> Question Palette</h2>
