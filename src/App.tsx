@@ -150,6 +150,19 @@ import { Toaster } from 'sonner';
 
 import { ErrorBoundary } from './components/ErrorBoundary';
 
+// Every real signed-in user needs a row in `profiles` for admin stats (Active Students count) and
+// role-based access to work. Bootstraps it on first sign-in if it doesn't exist yet; never overwrites
+// an existing row, so a manually-granted admin role is never reset.
+async function ensureProfile(user: User) {
+  const { data } = await supabase.from('profiles').select('id').eq('id', user.id).maybeSingle();
+  if (!data) {
+    await supabase.from('profiles').insert({
+      id: user.id,
+      display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Student',
+    });
+  }
+}
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [fallbackAdmin, setFallbackAdmin] = useState<FallbackAdmin | null>(null);
@@ -166,11 +179,13 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
+      if (session?.user) ensureProfile(session.user);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
+      if (session?.user) ensureProfile(session.user);
     });
 
     return () => subscription.unsubscribe();
