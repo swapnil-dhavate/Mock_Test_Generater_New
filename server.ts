@@ -248,11 +248,16 @@ app.post("/api/ai/generate-questions", async (req, res) => {
     // Fire and forget cache save
     setTimeout(saveCache, 0);
 
-    // Persist newly generated questions to the real, shared question bank (fire and forget)
+    // Persist newly generated questions to the real, shared question bank.
+    // Must be awaited before responding: Vercel can freeze the function immediately after
+    // the response is sent, so a true "fire and forget" insert here would often never complete.
     if (scopedSupabase && newQs.length > 0) {
-      scopedSupabase.from('questions').insert(newQs.map(questionToDbRow)).then(({ error }) => {
+      try {
+        const { error } = await scopedSupabase.from('questions').insert(newQs.map(questionToDbRow));
         if (error) console.warn("Failed to persist generated questions to Supabase", error);
-      });
+      } catch (e) {
+        console.warn("Failed to persist generated questions to Supabase", e);
+      }
     }
 
     // Combine matched from cache and newly generated questions
