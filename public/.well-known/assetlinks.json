@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.nursaiprep.app",
+    "sha256_cert_fingerprints": ["C8:52:AD:54:37:C6:6A:9A:12:6D:29:64:C6:AC:B8:36:EF:A5:3F:2E:B6:0A:8A:19:01:AD:1D:3E:82:26:94:AA"]
+  }
+}]
